@@ -25,26 +25,34 @@ func ProcessLine(line, old, new string) (found bool, res string, occ int) {
 }
 
 // FindReplaceFile reads the source file and uses ProcessLine function in order to process text and
-// returning new text
-func FindReplaceFile(src string, old string, new string) (occ int, lines []int, err error) {
+// returning a new file with updated text
+func FindReplaceFile(src string, dst string, old string, new string) (occ int, lines []int, err error) {
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return occ, lines, err
 	}
 	defer srcFile.Close()
 
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return occ, lines, err
+	}
+	defer dstFile.Close()
+
 	// Prevent text manipulation errors like a remplacement for Google
 	old = old + " "
 	new = new + " "
 	lineIdx := 1
 	scanner := bufio.NewScanner(srcFile)
+	writer := bufio.NewWriter(dstFile)
+	defer writer.Flush()
 	for scanner.Scan() {
 		found, res, o := ProcessLine(scanner.Text(), old, new)
 		if found {
 			occ += o
 			lines = append(lines, lineIdx)
 		}
-		fmt.Println(res)
+		fmt.Fprintf(writer, res)
 		lineIdx++
 	}
 	return occ, lines, nil
@@ -53,7 +61,7 @@ func FindReplaceFile(src string, old string, new string) (occ int, lines []int, 
 func main() {
 	o := "Go"
 	n := "Python"
-	occ, lines, err := FindReplaceFile("wikigo.txt", o, n)
+	occ, lines, err := FindReplaceFile("wikiGo.txt", "wikiPython.txt", o, n)
 	if err != nil {
 		fmt.Printf("Error while executing FindReplaceFile: %v\n", err)
 	}
